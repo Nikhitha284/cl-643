@@ -17,10 +17,11 @@ Equations
     alloc2(u,t)       ! Each task is assigned to one position
     continuity(u,k)   ! Continuous usage of event points
     demandeqn(s)         ! Demand satisfaction
-    changeover(u,k,t,s) ! Estimating changeover time between tasks
-    initial_changeover(u,t) ! Estimating initial changeover time
+    changeover(u,k,s) ! Estimating changeover time between tasks
+    initial_changeover(u) ! Estimating initial changeover time
     processing_time(u)    ! Estimating total processing and changeover time
-    task_duration(t)   ! Task duration fits within limits;
+    task_duration_max(t)
+    task_duration_min(t)   ! Task duration fits within limits;
 
 * Objective function
 obj ..
@@ -41,19 +42,26 @@ demandeqn(s) ..
     sum(t, ProductionRate(t) * delta(t) * ProducedState(t, s)) =g= Demand(s);
 
 * Use binary SuitableUnit(t, u)
-changeover(u,k,t,s)$(ord(k) > 1) ..
+changeover(u,k,s)$(ord(k) > 1) ..
     alpha(u,k) =g= sum(t, aij(t,s,u) * x(t,u,k-1) * SuitableUnit(t, u)) 
                  - M * (1 - x(s,u,k));
 
-initial_changeover(u,t) ..
-    alpha0(u) =g= sum(t, a0i(t,u) * x(t,u,k1) * SuitableUnit(t, u));
+
+initial_changeover(u) ..
+    alpha0(u) =g= sum(t, a0i(t,u) * x(t,u,k) * SuitableUnit(t, u));
+
 
 processing_time(u) ..
     sum(t, delta(t) * SuitableUnit(t, u)) + alpha0(u) + sum(k, alpha(u,k)) =l= Cmax;
 
-task_duration(t) ..
-    MinTime(t) * sum(k, x(t,SuitableUnit(t),k)) =l= delta(t) 
-    =l= Tmax(t) * sum(k, x(t,SuitableUnit(t),k));
+* Task duration constraints
+task_duration_min(t) ..
+    MinTime(t) * sum((u,k), x(t,u,k) * SuitableUnit(t, u)) =l= delta(t);
+
+task_duration_max(t) ..
+    delta(t) =l= Tmax(t) * sum((u,k), x(t,u,k) * SuitableUnit(t, u));
+
+
 
 * Bounds
 delta.lo(t) = 0;
